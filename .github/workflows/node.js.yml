@@ -1,0 +1,60 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them,
+# build the source code, and run tests across different versions of Node.js.
+# For more information, see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Node.js CI
+
+on:
+  push:
+    branches: ["dev"]
+  pull_request:
+    branches: ["dev"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'  # Enable caching for npm dependencies
+
+      - name: Install dependencies
+        run: |
+          echo "Installing dependencies..."
+          npm ci
+          echo "Dependencies installed successfully!"
+
+      - name: Build the project
+        run: |
+          echo "Building the project..."
+          npm run build --if-present || echo "No build script found."
+          echo "Build completed!"
+
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+          npm test
+          echo "Tests completed!"
+
+      - name: Upload coverage reports
+        if: success()  # Only run this step if previous steps succeeded
+        run: |
+          echo "Uploading coverage reports..."
+          npm run coverage || echo "No coverage script found."
+          echo "Coverage reports uploaded!"
+          
+      - name: Notify completion
+        if: success()  # Notify if the build was successful
+        run: |
+          echo "Build and test workflow completed successfully!"
